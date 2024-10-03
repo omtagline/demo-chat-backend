@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const app = require('express')();
 app.use(cors());
+const port = process.env.PORT 
 
 const emailToSocketMapping = new Map();
 const channelsMap=[]
@@ -79,11 +80,11 @@ app.delete("/channel/:id",(req,res)=>{
   res.send({message:"Channel deleted successfully"})
 })
 
-app.listen(8000, () => {
+app.listen(port, () => {
   console.log('Listening on port 8000');
 });
 
-io.listen(8001, {
+io.listen(port+1, {
   cors: {
     origin: '*',
     methods: ['GET', 'POST'],
