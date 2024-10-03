@@ -56,6 +56,10 @@ io.on('connection', (socket) => {
   });
 });
 
+app.get('/',(req,res)=>{
+  res.send('<h1>Hello api is working</h1>')
+})
+
 
 app.post("/channel",(req,res)=>{
   const {name} = req.body;
