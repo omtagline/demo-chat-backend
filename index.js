@@ -1,43 +1,28 @@
 const { Server } = require('socket.io');
-const express = require('express');
-const http = require('http');
+const io = new Server();
 const bodyParser = require('body-parser');
 const cors = require('cors');
-
-const app = express();
+const app = require('express')();
 app.use(cors());
+const port = process.env.PORT |8000
+
+const emailToSocketMapping = new Map();
+const channelsMap=[]
 app.use(bodyParser.json());
 
-const port = process.env.PORT || 8000;
-
-// Create an HTTP server and pass it to both Express and Socket.io
-const server = http.createServer(app);
-
-// Initialize the Socket.io server using the same HTTP server
-const io = new Server(server, {
-  cors: {
-    origin: '*',
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type'],
-    credentials: true,
-  }
-});
-
-// Maps and collections
-const emailToSocketMapping = new Map();
-let channelsMap = [];
-
-// Socket.io events
 io.on('connection', (socket) => {
   console.log('New client connected');
 
+  // Event: User joins a room
   socket.on('join-room', (data) => {
     const { roomId, email } = data;
     emailToSocketMapping.set(roomId, email);
     socket.join(roomId);
     socket.broadcast.to(roomId).emit('user-joined', { email });
+    
   });
 
+  // Event: User joins a chat
   socket.on('join-chat', (data) => {
     const { roomId, email } = data;
     emailToSocketMapping.set(roomId, email);
@@ -45,50 +30,72 @@ io.on('connection', (socket) => {
     socket.broadcast.to(roomId).emit('user-chat', { email });
   });
 
+  // New Event 1: User sends a message
   socket.on('send-message', (data) => {
     const { roomId, message, email } = data;
     socket.broadcast.to(roomId).emit('receive-message', { email, message });
   });
 
+
+  // New Event 2: User leaves a room
   socket.on('leave-room', (data) => {
     const { roomId, email } = data;
     socket.leave(roomId);
     socket.broadcast.to(roomId).emit('user-left', { email });
   });
 
+  // New Event 3: User typing indicator
   socket.on('typing', (data) => {
     const { roomId, email } = data;
     socket.broadcast.to(roomId).emit('user-typing', { email });
   });
 
+  // Handle socket disconnection
   socket.on('disconnect', () => {
     console.log('Client disconnected');
   });
 });
 
-// API routes
-app.get('/', (req, res) => {
-  res.send('<h1>Hello, the API is working!</h1>');
+app.get('/',(req,res)=>{
+  res.send('<h1>Hello api is working</h1>.')
+})
+
+
+app.post("/channel",(req,res)=>{
+  const {name} = req.body;
+  const roomId=  Math.floor(100000 + Math.random() * 900000);
+  console.log(name);
+  // if (channelsMap.includes(roomId)) {
+    channelsMap.push({roomId,name})
+    res.send({message:"Channel created successfully"})    
+  // }
+  // res.send({message:'internal Server Error'})
+})
+
+app.get("/channel",(req,res)=>{
+  // console.log(req);
+  // const {roomId,name} = req.body;
+  res.send({message:"Channel get successfully",data:channelsMap})
+})
+
+app.delete("/channel/:id",(req,res)=>{
+  const id= req.params;
+  channelsMap=channelsMap.filter(p=>p!==id)
+  res.send({message:"Channel deleted successfully"})
+})
+
+app.listen(port, () => {
+  console.log('Listening on port 8000');
 });
 
-app.post("/channel", (req, res) => {
-  const { name } = req.body;
-  const roomId = Math.floor(100000 + Math.random() * 900000);
-  channelsMap.push({ roomId, name });
-  res.send({ message: "Channel created successfully", roomId });
+io.listen(port, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type'],
+    credentials: true,
+  },
 });
 
-app.get("/channel", (req, res) => {
-  res.send({ message: "Channels retrieved successfully", data: channelsMap });
-});
 
-app.delete("/channel/:id", (req, res) => {
-  const id = req.params.id;
-  channelsMap = channelsMap.filter(channel => channel.roomId !== parseInt(id));
-  res.send({ message: "Channel deleted successfully" });
-});
 
-// Start the server
-server.listen(port, () => {
-  console.log(`Listening on port ${port}`);
-});
