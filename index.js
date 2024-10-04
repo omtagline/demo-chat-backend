@@ -60,6 +60,15 @@ io.on('connection', (socket) => {
     const { roomId, email } = data;
     socket.broadcast.to(roomId).emit('user-typing', { email });
   });
+  socket.on('file-upload',(data)=>{
+    const {roomId,fileData,fileName,fileType}=data
+    io.to(roomId).emit('file-upload', {
+      fileName,
+      fileData,
+      fileType,
+      sender: socket.id // Optionally send the sender's socket ID
+    });
+  })
 
   socket.on('disconnect', () => {
     console.log('Client disconnected');
@@ -92,3 +101,4 @@ app.delete("/channel/:id", (req, res) => {
 server.listen(port, () => {
   console.log(`Listening on port ${port}`);
 });
+
