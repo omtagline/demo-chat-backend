@@ -70,6 +70,37 @@ io.on('connection', (socket) => {
     });
   })
 
+
+  //for webrtc
+   // Listen for offers from clients
+   socket.on('offer', (data) => {
+    console.log('Received offer from', socket.id);
+    socket.to(data.roomId).emit('offer', {
+      offer: data.offer,
+      from: socket.id,
+    });
+  });
+
+  // Listen for answers from clients
+  socket.on('answer', (data) => {
+    console.log(data);
+    console.log('Received answer from', socket.id);
+    socket.to(data.roomId).emit('answer', {
+      answer: data.answer,
+      from: socket.id,
+    });
+  });
+
+  // Listen for ICE candidates from clients
+  socket.on('ice-candidate', (data) => {
+    console.log('Received ICE candidate from', socket.id);
+    socket.to(data.roomId).emit('ice-candidate', {
+      candidate: data.candidate,
+      from: socket.id,
+    });
+  });
+
+
   socket.on('disconnect', () => {
     console.log('Client disconnected');
   });
